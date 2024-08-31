@@ -11,6 +11,7 @@ export default function CreateUser() {
         e.preventDefault()
         axios.post("http://localhost:3001/createTodo",{name,task})
         .then(result => {
+            debugger;
             console.log("result",result)
             navigate('/dashboard')
         })

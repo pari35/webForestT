@@ -9,6 +9,7 @@ const Dashboard = () => {
     useEffect(() => {
         axios.get('http://localhost:3001/dashboard')
         .then(res => {
+            debugger;
             console.log(res)
             if(res.data.valid) {
                 setMessage(res.data.message)

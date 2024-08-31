@@ -16,13 +16,13 @@ function App() {
    
      <BrowserRouter>
       <Routes>
-      
-        <Route path='/register' element={<Registration />}></Route>
-        <Route path='/login' element={<Login />}></Route>
-        <Route path='/create' element={<CreateUser />}></Route>
-        <Route path='/update/:id' element={<UpdateUser />}></Route>
-        <Route path='/dashboard' element={<Users />}></Route>
+        <Route path='/' element={<Registration />} />
+        <Route path='/login' element={<Login />} />
+        <Route path='/create' element={<CreateUser />} />
+        <Route path='/update/:id' element={<UpdateUser />} />
+        <Route path='/dashboard' element={<Users />} />
       </Routes>
+
     </BrowserRouter>
    
   )
