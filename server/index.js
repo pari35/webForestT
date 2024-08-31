@@ -7,6 +7,7 @@ import StudentModel from './models/Student.js'
 import TodoModel from './models/Todo.js'
 import joi from 'joi'
 import bcrypt from 'bcrypt'
+import bodyParser from "body-parser"
 
 const app = express()
 app.use(express.json())
@@ -18,7 +19,8 @@ app.use(cors({
 app.listen(3001, () => {
     console.log("Server is Running")
 })
-
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended: true}));
 mongoose.connect('mongodb+srv://paritoshpardeshi35:ksIwimVdcCXlFxD4@cluster0.qoagclq.mongodb.net/').then((data) => {
     console.log("mongodb connected ");
 }).catch((err) => {
@@ -26,17 +28,17 @@ mongoose.connect('mongodb+srv://paritoshpardeshi35:ksIwimVdcCXlFxD4@cluster0.qoa
 })
 
 app.post('/register', async(req, res) => {
-    const { name, email, password } = req.body;
-    const schema = joi.object({
-        name: joi.string().min(3).max(100).required(),
-        email: joi.string().email().required(),
-        password: joi.string().min(4).alphanum().required()
-    })
-
-    const { error, value } = schema.validate(req.body)
-    if (error) {
-        return res.status(400).json({ message: "Bad request", error })
-    }
+    const { name, email, password ,role} = req.body;
+//     const schema = joi.object({
+//         name: joi.string().min(3).max(100).required(),
+//         email: joi.string().email().required(),
+//         password: joi.string().min(4).alphanum().required()
+//     })
+// console.log("ffff",req.body);
+//     const { error, value } = schema.validate(req.body)
+//     if (error) {
+//         return res.status(400).json({ message: "Bad request", error })
+    // }
     const stud = new StudentModel(req.body)
     stud.password = await bcrypt.hash(req.body.password, 10)
     const addUser = await StudentModel.create(stud);
@@ -46,27 +48,49 @@ app.post('/register', async(req, res) => {
     })
 })
 
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res, next) => {
     const { email, password } = req.body;
-    StudentModel.findOne({ email })
-        .then(user => {
-            if (user) {
-                if (bcrypt.compare(req.body.password, userData.password) === password) {
-                    const accessToken = jwt.sign({ email: email },
-                        "jwt-access-token-secret-key", { expiresIn: '5m' })
-                    const refreshToken = jwt.sign({ email: email },
-                        "jwt-refresh-token-secret-key", { expiresIn: '10m' })
+    try {
+        const userData = await StudentModel.findOne({ email: req.body.email })
+        console.log('first', userData)
+        if (!userData) {
+            return res.status(401).json({
+                message: 'Invalid username / password'
+            })
+        }
 
-                    res.cookie('accessToken', accessToken, { maxAge: 60000 })
+        const passwordAuth = await bcrypt.compare(req.body.password, userData.password)
+        if (!passwordAuth) {
+            return res.status(401).json({
+                message: 'Invalid username / password'
+            })
+        }
+        const tokenObject = {
+            __id: userData.id,
+            fullName: userData.fullName,
+            email: userData.email,
+            role : userData.role
+        }
 
-                    res.cookie('refreshToken', refreshToken,
-                        { maxAge: 300000, httpOnly: true, secure: true, sameSite: 'strict' })
-                    return res.json({ Login: true })
-                }
-            } else {
-                res.json({ Login: false, Message: "no record" })
-            }
-        }).catch(err => res.json(err))
+
+        const jwtToken = jwt.sign(tokenObject, "secret", { expiresIn: '4h' })
+        const accessToken = jwt.sign({ email: email },
+            "jwt-access-token-secret-key", { expiresIn: '5m' })
+        const refreshToken = jwt.sign({ email: email },
+            "jwt-refresh-token-secret-key", { expiresIn: '10m' })
+
+        res.cookie('accessToken', accessToken, { maxAge: 60000 })
+
+        res.cookie('refreshToken', refreshToken,
+            { maxAge: 300000, httpOnly: true, secure: true, sameSite: 'strict' })
+        return res.status(200).json({ jwtToken, userData })
+    }
+    catch (e) {
+        console.log(e)
+
+        return res.status(500).json({ message: e })
+
+    }
 })
 
 const varifyUser = (req, res, next) => {
