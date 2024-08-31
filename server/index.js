@@ -29,16 +29,6 @@ mongoose.connect('mongodb+srv://paritoshpardeshi35:ksIwimVdcCXlFxD4@cluster0.qoa
 
 app.post('/register', async(req, res) => {
     const { name, email, password ,role} = req.body;
-//     const schema = joi.object({
-//         name: joi.string().min(3).max(100).required(),
-//         email: joi.string().email().required(),
-//         password: joi.string().min(4).alphanum().required()
-//     })
-// console.log("ffff",req.body);
-//     const { error, value } = schema.validate(req.body)
-//     if (error) {
-//         return res.status(400).json({ message: "Bad request", error })
-    // }
     const stud = new StudentModel(req.body)
     stud.password = await bcrypt.hash(req.body.password, 10)
     const addUser = await StudentModel.create(stud);
@@ -52,7 +42,7 @@ app.post('/login', async (req, res, next) => {
     const { email, password } = req.body;
     try {
         const userData = await StudentModel.findOne({ email: req.body.email })
-        console.log('first', userData)
+        
         if (!userData) {
             return res.status(401).json({
                 message: 'Invalid username / password'
@@ -65,15 +55,7 @@ app.post('/login', async (req, res, next) => {
                 message: 'Invalid username / password'
             })
         }
-        const tokenObject = {
-            __id: userData.id,
-            fullName: userData.fullName,
-            email: userData.email,
-            role : userData.role
-        }
 
-
-        const jwtToken = jwt.sign(tokenObject, "secret", { expiresIn: '4h' })
         const accessToken = jwt.sign({ email: email },
             "jwt-access-token-secret-key", { expiresIn: '5m' })
         const refreshToken = jwt.sign({ email: email },
@@ -83,13 +65,11 @@ app.post('/login', async (req, res, next) => {
 
         res.cookie('refreshToken', refreshToken,
             { maxAge: 300000, httpOnly: true, secure: true, sameSite: 'strict' })
-        return res.status(200).json({ jwtToken, userData })
+        return res.status(200).json({ Login :true})
     }
     catch (e) {
         console.log(e)
-
         return res.status(500).json({ message: e })
-
     }
 })
 
@@ -139,7 +119,7 @@ app.post("/createTodo", async (req, res) => {
     })
 })
 
-app.get('/dashboard', varifyUser,(req, res) => {
+app.get('/dashboard',(req, res) => {
     TodoModel.find({})
         .then(todos => res.json(todos))
         .catch((err => res.json(err)))
